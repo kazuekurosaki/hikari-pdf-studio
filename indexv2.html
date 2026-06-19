@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="id" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+  <meta name="theme-color" content="#ff6b6b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Hikari PDF Studio">
+  <title>Hikari Pdf Studio</title>
+  <!-- PWA Manifest (inline data URI) -->
+  <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIkhpa2FyaSBQZGYgU3R1ZGlvIiwKICAic2hvcnRfbmFtZSI6ICJIaWthcmkgUERGIiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmZjZiNmIiLAogICJ0aGVtZV9jb2xvciI6ICIjZmY2YjZiIiwKICAiaWNvbnMiOiBbXQp9">
+  <!-- CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js">
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js">
+  </script>
+  <style>
+    :root {
+      --bg: #f8f9fc;
+      --surface: #ffffff;
+      --text: #1e1e2f;
+      --text-secondary: #5a5a72;
+      --primary: #ff6b6b;
+      --primary-hover: #e55858;
+      --border: #e0e0e8;
+      --shadow: 0 4px 20px rgba(0,0,0,0.06);
+      --radius: 16px;
+      --transition: 0.2s ease;
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --danger: #e53e3e;
+    }
+    .dark {
+      --bg: #1a1a2e;
+      --surface: #25253a;
+      --text: #e8e8f0;
+      --text-secondary: #a0a0b8;
+      --primary: #ff8585;
+      --primary-hover: #e06e6e;
+      --border: #3a3a50;
+      --shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      transition: background var(--transition), color var(--transition);
+      min-height: 100vh;
+      padding: 0 8px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .app-container {
+      max-width: 1000px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 4px;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10;
+      transition: background var(--transition);
+    }
+    .logo {
+      font-size: 1.7rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    button, .btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 18px;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all var(--transition);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font);
+    }
+    button:hover, .btn:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+      box-shadow: 0 6px 18px rgba(255,107,107,0.25);
+    }
+    button.primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+    button.primary:hover {
+      background: var(--primary-hover);
+    }
+    button.danger {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+    button.danger:hover {
+      background: var(--danger);
+      color: white;
+    }
+    .icon-btn {
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin: 16px 0;
+      flex-wrap: wrap;
+    }
+    .tab {
+      padding: 10px 24px;
+      border-radius: 30px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .tab.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+    .panel {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+      transition: background var(--transition);
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-family: var(--font);
+      font-size: 0.95rem;
+      background: var(--bg);
+      color: var(--text);
+      transition: background var(--transition), border var(--transition);
+    }
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+    .chapter-list-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: var(--bg);
+      margin-bottom: 10px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all var(--transition);
+    }
+    .chapter-list-item.active {
+      border-color: var(--primary);
+      background: var(--surface);
+      box-shadow: 0 0 0 4px rgba(255,107,107,0.1);
+    }
+    .chapter-list-item .drag-handle {
+      cursor: grab;
+      color: var(--text-secondary);
+      font-size: 1.2rem;
+      padding: 0 4px;
+    }
+    .segment {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: var(--bg);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+      transition: all var(--transition);
+    }
+    .segment-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .segment-handle {
+      cursor: grab;
+      color: var(--text-secondary);
+    }
+    .segment-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 6px;
+    }
+    .image-preview {
+      max-width: 100%;
+      max-height: 200px;
+      object-fit: contain;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .flex-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .chapter-editor {
+      margin-top: 20px;
+    }
+    @media (max-width: 600px) {
+      .logo {
+        font-size: 1.3rem;
+      }
+      button {
+        padding: 8px 14px;
+        font-size: 0.8rem;
+      }
+      .tabs {
+        gap: 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header>
+      <div class="logo">✨ Hikari Pdf Studio</div>
+      <div class="header-actions">
+        <button id="themeToggle" class="icon-btn" title="Dark/Light mode">🌓</button>
+        <button id="downloadBtn" class="primary">⬇️ Unduh PDF</button>
+      </div>
+    </header>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="cover">📘 Cover</div>
+      <div class="tab" data-tab="chapters">📖 Bab</div>
+    </div>
+
+    <!-- Panel Cover -->
+    <div id="coverPanel" class="panel">
+      <h3 style="margin-bottom:16px;">Halaman Cover</h3>
+      <div class="form-group">
+        <label>Gambar Cover (opsional, full-page)</label>
+        <div class="flex-row">
+          <input type="file" id="coverImageUpload" accept="image/*">
+          <span style="font-weight:600;">atau</span>
+          <input type="url" id="coverImageUrl" placeholder="https://...">
+          <button id="addCoverImageBtn">Tambah</button>
+        </div>
+        <img id="coverPreview" class="image-preview" style="display:none; margin-top:8px;">
+        <button id="removeCoverImage" class="danger" style="display:none; margin-top:6px;">Hapus Gambar</button>
+      </div>
+      <div class="form-group"><label>Judul Novel</label><input id="coverTitle" placeholder="Judul"></div>
+      <div class="form-group"><label>Penulis</label><input id="coverAuthor" placeholder="Nama Penulis"></div>
+      <div class="form-group"><label>Ilustrator</label><input id="coverIllustrator" placeholder="Nama Ilustrator"></div>
+      <div class="form-group"><label>Penerjemah</label><input id="coverTranslator" placeholder="Nama Penerjemah"></div>
+      <div class="form-group"><label>Genre</label><input id="coverGenre" placeholder="Genre, dipisah koma"></div>
+      <div class="form-group"><label>Sinopsis</label><textarea id="coverSynopsis" rows="4" placeholder="Tulis sinopsis..."></textarea></div>
+    </div>
+
+    <!-- Panel Bab -->
+    <div id="chaptersPanel" class="panel" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3>Daftar Bab</h3>
+        <button id="addChapterBtn" class="primary">+ Bab Baru</button>
+      </div>
+      <div id="chapterList" class="sortable-chapters"></div>
+      <div id="chapterEditor" class="chapter-editor" style="display:none;"></div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // ========== STATE ==========
+      const defaultState = {
+        cover: {
+          image: null, // data URL
+          title: '',
+          author: '',
+          illustrator: '',
+          translator: '',
+          genre: '',
+          synopsis: ''
+        },
+        chapters: []
+      };
+      let state = JSON.parse(JSON.stringify(defaultState));
+      let activeChapterId = null;
+      let activeTab = 'cover';
+
+      // ========== DOM refs ==========
+      const $ = (sel) => document.querySelector(sel);
+      const $$ = (sel) => document.querySelectorAll(sel);
+
+      const coverPanel = $('#coverPanel');
+      const chaptersPanel = $('#chaptersPanel');
+      const chapterListEl = $('#chapterList');
+      const chapterEditorEl = $('#chapterEditor');
+      const themeToggle = $('#themeToggle');
+      const downloadBtn = $('#downloadBtn');
+      const tabEls = $$('.tab');
+
+      // ========== AUTO SAVE (localforage) ==========
+      async function saveState() {
+        try {
+          await localforage.setItem('hikari-pdf-studio-state', state);
+        } catch (e) {
+          console.warn('Auto save gagal', e);
+        }
+      }
+      async function loadState() {
+        try {
+          const saved = await localforage.getItem('hikari-pdf-studio-state');
+          if (saved && saved.cover && saved.chapters) {
+            state = saved;
+          }
+        } catch (e) {
+          console.warn('Gagal memuat data tersimpan', e);
+        }
+      }
+
+      // ========== DARK/LIGHT MODE ==========
+      function applyTheme(theme) {
+        document.documentElement.className = theme;
+        localStorage.setItem('hikari-theme', theme);
+        themeToggle.textContent = theme === 'dark' ? '☀️' : '🌓';
+      }
+      themeToggle.addEventListener('click', () => {
+        const current = document.documentElement.className;
+        applyTheme(current === 'dark' ? 'light' : 'dark');
+      });
+      const savedTheme = localStorage.getItem('hikari-theme') || 'light';
+      applyTheme(savedTheme);
+
+      // ========== TAB SWITCHING ==========
+      function switchTab(tab) {
+        activeTab = tab;
+        tabEls.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+        coverPanel.style.display = tab === 'cover' ? 'block' : 'none';
+        chaptersPanel.style.display = tab === 'chapters' ? 'block' : 'none';
+        if (tab === 'cover') renderCoverForm();
+        if (tab === 'chapters') {
+          renderChapterList();
+          if (activeChapterId) renderChapterEditor();
+          else chapterEditorEl.style.display = 'none';
+        }
+      }
+      tabEls.forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+
+      // ========== COVER FORM ==========
+      function renderCoverForm() {
+        $('#coverTitle').value = state.cover.title || '';
+        $('#coverAuthor').value = state.cover.author || '';
+        $('#coverIllustrator').value = state.cover.illustrator || '';
+        $('#coverTranslator').value = state.cover.translator || '';
+        $('#coverGenre').value = state.cover.genre || '';
+        $('#coverSynopsis').value = state.cover.synopsis || '';
+        const preview = $('#coverPreview');
+        const removeBtn = $('#removeCoverImage');
+        if (state.cover.image) {
+          preview.src = state.cover.image;
+          preview.style.display = 'block';
+          removeBtn.style.display = 'inline-block';
+        } else {
+          preview.style.display = 'none';
+          removeBtn.style.display = 'none';
+        }
+      }
+
+      function updateCoverField(field, value) {
+        state.cover[field] = value;
+        saveState();
+      }
+
+      ['coverTitle','coverAuthor','coverIllustrator','coverTranslator','coverGenre','coverSynopsis'].forEach(id => {
+        const el = $('#' + id);
+        if (!el) return;
+        const field = id.replace('cover', '').charAt(0).toLowerCase() + id.replace('cover', '').slice(1);
+        el.addEventListener('input', () => updateCoverField(field, el.value));
+      });
+
+      // Cover image add
+      function setCoverImage(dataUrl) {
+        state.cover.image = dataUrl;
+        saveState();
+        renderCoverForm();
+      }
+      $('#removeCoverImage').addEventListener('click', () => {
+        state.cover.image = null;
+        saveState();
+        renderCoverForm();
+      });
+      $('#addCoverImageBtn').addEventListener('click', async () => {
+        const url = $('#coverImageUrl').value.trim();
+        if (url) {
+          try {
+            const img = await loadImageFromUrl(url);
+            const resized = await resizeImageIfNeeded(img);
+            setCoverImage(resized);
+            $('#coverImageUrl').value = '';
+          } catch (e) {
+            alert('Gagal memuat gambar dari URL. Pastikan URL valid dan mendukung CORS.');
+          }
+        } else {
+          alert('Masukkan URL gambar terlebih dahulu.');
+        }
+      });
+      $('#coverImageUpload').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const dataUrl = await fileToDataURL(file);
+        const img = await loadImageFromUrl(dataUrl);
+        const resized = await resizeImageIfNeeded(img);
+        setCoverImage(resized);
+      });
+
+      // ========== UTILS: IMAGE LOADING & RESIZE ==========
+      function fileToDataURL(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function loadImageFromUrl(src) {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.crossOrigin = 'Anonymous';
+          img.onload = () => resolve(img);
+          img.onerror = (e) => reject(e);
+          img.src = src;
+        });
+      }
+
+      // Resize if width or height > 2000px, maintain aspect ratio, output JPEG 0.85
+      function resizeImageIfNeeded(img, maxDim = 2000) {
+        return new Promise((resolve) => {
+          const { naturalWidth: w, naturalHeight: h } = img;
+          if (w <= maxDim && h <= maxDim) {
+            // no resize, just convert to JPEG if not already to reduce size
+            resolve(convertToJPEG(img, w, h));
+            return;
+          }
+          const ratio = Math.min(maxDim / w, maxDim / h);
+          const newW = Math.round(w * ratio);
+          const newH = Math.round(h * ratio);
+          const canvas = document.createElement('canvas');
+          canvas.width = newW;
+          canvas.height = newH;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, newW, newH);
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
+        });
+      }
+
+      function convertToJPEG(img, w, h) {
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        return canvas.toDataURL('image/jpeg', 0.85);
+      }
+
+      // ========== CHAPTERS ==========
+      function addChapter(type = 'text') {
+        const newChapter = {
+          id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+          title: 'Bab ' + (state.chapters.length + 1),
+          type: type,
+          content: type === 'illustration' ? [] : [{ type: 'text', data: '' }]
+        };
+        state.chapters.push(newChapter);
+        activeChapterId = newChapter.id;
+        saveState();
+        renderChapterList();
+        renderChapterEditor();
+      }
+
+      function deleteChapter(id) {
+        state.chapters = state.chapters.filter(ch => ch.id !== id);
+        if (activeChapterId === id) {
+          activeChapterId = state.chapters.length > 0 ? state.chapters[0].id : null;
+        }
+        saveState();
+        renderChapterList();
+        if (activeChapterId) renderChapterEditor();
+        else chapterEditorEl.style.display = 'none';
+      }
+
+      function getChapterIndex(id) {
+        return state.chapters.findIndex(ch => ch.id === id);
+      }
+
+      function moveChapter(fromIdx, toIdx) {
+        const [moved] = state.chapters.splice(fromIdx, 1);
+        state.chapters.splice(toIdx, 0, moved);
+        saveState();
+        renderChapterList();
+      }
+
+      function renderChapterList() {
+        chapterListEl.innerHTML = '';
+        state.chapters.forEach((ch, idx) => {
+          const div = document.createElement('div');
+          div.className = 'chapter-list-item' + (ch.id === activeChapterId ? ' active' : '');
+          div.dataset.id = ch.id;
+          div.innerHTML = `
+            <span class="drag-handle">⠿</span>
+            <span style="flex:1; font-weight:600;">${escapeHtml(ch.title)}</span>
+            <small style="color:var(--text-secondary);">${ch.type === 'illustration' ? '🖼️ Ilustrasi' : '📝 Teks'}</small>
+            <button class="danger" data-action="delete" style="padding:6px 12px;">🗑️</button>
+          `;
+          div.querySelector('[data-action="delete"]').addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteChapter(ch.id);
+          });
+          div.addEventListener('click', () => {
+            activeChapterId = ch.id;
+            renderChapterList();
+            renderChapterEditor();
+          });
+          chapterListEl.appendChild(div);
+        });
+
+        // Sortable drag chapters
+        if (typeof Sortable !== 'undefined' && chapterListEl) {
+          new Sortable(chapterListEl, {
+            handle: '.drag-handle',
+            animation: 150,
+            onEnd: function(evt) {
+              const oldIdx = evt.oldIndex;
+              const newIdx = evt.newIndex;
+              if (oldIdx !== newIdx) {
+                moveChapter(oldIdx, newIdx);
+              }
+            }
+          });
+        }
+      }
+
+      function getActiveChapter() {
+        return state.chapters.find(ch => ch.id === activeChapterId);
+      }
+
+      function renderChapterEditor() {
+        const chapter = getActiveChapter();
+        if (!chapter) {
+          chapterEditorEl.style.display = 'none';
+          return;
+        }
+        chapterEditorEl.style.display = 'block';
+        chapterEditorEl.innerHTML = `
+          <div class="form-group">
+            <label>Judul Bab</label>
+            <input id="chapterTitle" value="${escapeHtml(chapter.title)}">
+          </div>
+          <div class="form-group">
+            <label>Tipe Bab</label>
+            <select id="chapterType" class="btn" style="width:auto;">
+              <option value="text" ${chapter.type === 'text' ? 'selected' : ''}>📝 Teks (bisa sisipkan gambar)</option>
+              <option value="illustration" ${chapter.type === 'illustration' ? 'selected' : ''}>🖼️ Ilustrasi (gambar full-page)</option>
+            </select>
+          </div>
+          <div id="chapterContentArea"></div>
+          <div class="flex-row" style="margin-top:12px;">
+            ${chapter.type === 'text' ? `<button id="addTextSegmentBtn">+ Segmen Teks</button><button id="addImageSegmentBtn">+ Segmen Gambar</button>` : `<button id="addIllustrationImageBtn">+ Gambar Ilustrasi</button>`}
+          </div>
+        `;
+
+        $('#chapterTitle').addEventListener('input', (e) => {
+          chapter.title = e.target.value;
+          saveState();
+          renderChapterList();
+        });
+        $('#chapterType').addEventListener('change', (e) => {
+          const newType = e.target.value;
+          if (newType !== chapter.type) {
+            chapter.type = newType;
+            if (newType === 'illustration') {
+              chapter.content = chapter.content.filter(s => s.type === 'image');
+              if (chapter.content.length === 0) chapter.content = [];
+            } else {
+              chapter.content = chapter.content.filter(s => s.type === 'text' || s.type === 'image');
+              if (chapter.content.length === 0) chapter.content = [{ type: 'text', data: '' }];
+            }
+            saveState();
+            renderChapterEditor();
+          }
+        });
+
+        renderChapterContent(chapter);
+      }
+
+      function renderChapterContent(chapter) {
+        const area = $('#chapterContentArea');
+        if (!area) return;
+        area.innerHTML = '';
+        const content = chapter.content;
+
+        if (chapter.type === 'illustration') {
+          // list of images
+          content.forEach((seg, idx) => {
+            const segDiv = document.createElement('div');
+            segDiv.className = 'segment';
+            segDiv.dataset.index = idx;
+            segDiv.innerHTML = `
+              <div class="segment-header">
+                <span class="segment-handle">⠿</span>
+                <strong>Gambar ${idx+1}</strong>
+                <div class="segment-actions">
+                  <button class="danger" data-action="remove">🗑️</button>
+                </div>
+              </div>
+              <img src="${seg.data || ''}" class="image-preview" style="max-height:150px;">
+              <div class="flex-row">
+                <input type="file" accept="image/*" class="img-upload">
+                <span>atau</span>
+                <input type="url" class="img-url" placeholder="URL gambar">
+                <button class="btn add-img-btn">Tambah</button>
+              </div>
+            `;
+            segDiv.querySelector('[data-action="remove"]').addEventListener('click', () => {
+              chapter.content.splice(idx, 1);
+              saveState();
+              renderChapterContent(chapter);
+            });
+            const addBtn = segDiv.querySelector('.add-img-btn');
+            addBtn.addEventListener('click', async () => {
+              const urlInput = segDiv.querySelector('.img-url');
+              const fileInput = segDiv.querySelector('.img-upload');
+              if (fileInput.files[0]) {
+                const dataUrl = await fileToDataURL(fileInput.files[0]);
+                const img = await loadImageFromUrl(dataUrl);
+                const resized = await resizeImageIfNeeded(img);
+                seg.data = resized;
+                saveState();
+                renderChapterContent(chapter);
+              } else if (urlInput.value.trim()) {
+                try {
+                  const img = await loadImageFromUrl(urlInput.value.trim());
+                  const resized = await resizeImageIfNeeded(img);
+                  seg.data = resized;
+                  saveState();
+                  renderChapterContent(chapter);
+                } catch (e) {
+                  alert('Gagal memuat gambar dari URL.');
+                }
+              }
+            });
+            area.appendChild(segDiv);
+          });
+
+          // Sortable images
+          if (typeof Sortable !== 'undefined') {
+            new Sortable(area, {
+              handle: '.segment-handle',
+              animation: 150,
+              onEnd: function(evt) {
+                const oldIdx = evt.oldIndex;
+                const newIdx = evt.newIndex;
+                const moved = chapter.content.splice(oldIdx, 1)[0];
+                chapter.content.splice(newIdx, 0, moved);
+                saveState();
+                renderChapterContent(chapter);
+              }
+            });
+          }
+        } else {
+          // text chapter: segments
+          content.forEach((seg, idx) => {
+            const segDiv = document.createElement('div');
+            segDiv.className = 'segment';
+            segDiv.dataset.index = idx;
+            if (seg.type === 'text') {
+              segDiv.innerHTML = `
+                <div class="segment-header">
+                  <span class="segment-handle">⠿</span>
+                  <strong>✍️ Teks</strong>
+                  <div class="segment-actions">
+                    <button class="danger" data-action="remove">🗑️</button>
+                  </div>
+                </div>
+                <textarea class="seg-text" rows="4" placeholder="Tulis teks di sini...">${escapeHtml(seg.data)}</textarea>
+              `;
+              segDiv.querySelector('.seg-text').addEventListener('input', (e) => {
+                seg.data = e.target.value;
+                saveState();
+              });
+            } else if (seg.type === 'image') {
+              segDiv.innerHTML = `
+                <div class="segment-header">
+                  <span class="segment-handle">⠿</span>
+                  <strong>🖼️ Gambar Full-Page</strong>
+                  <div class="segment-actions">
+                    <button class="danger" data-action="remove">🗑️</button>
+                  </div>
+                </div>
+                <img src="${seg.data || ''}" class="image-preview" style="max-height:150px;">
+                <div class="flex-row">
+                  <input type="file" accept="image/*" class="img-upload">
+                  <span>atau</span>
+                  <input type="url" class="img-url" placeholder="URL gambar">
+                  <button class="btn add-img-btn">Tambah</button>
+                </div>
+              `;
+              const addBtn = segDiv.querySelector('.add-img-btn');
+              addBtn.addEventListener('click', async () => {
+                const urlInput = segDiv.querySelector('.img-url');
+                const fileInput = segDiv.querySelector('.img-upload');
+                if (fileInput.files[0]) {
+                  const dataUrl = await fileToDataURL(fileInput.files[0]);
+                  const img = await loadImageFromUrl(dataUrl);
+                  const resized = await resizeImageIfNeeded(img);
+                  seg.data = resized;
+                  saveState();
+                  renderChapterContent(chapter);
+                } else if (urlInput.value.trim()) {
+                  try {
+                    const img = await loadImageFromUrl(urlInput.value.trim());
+                    const resized = await resizeImageIfNeeded(img);
+                    seg.data = resized;
+                    saveState();
+                    renderChapterContent(chapter);
+                  } catch (e) {
+                    alert('Gagal memuat gambar dari URL.');
+                  }
+                }
+              });
+            }
+            segDiv.querySelector('[data-action="remove"]').addEventListener('click', () => {
+              chapter.content.splice(idx, 1);
+              saveState();
+              renderChapterContent(chapter);
+            });
+            area.appendChild(segDiv);
+          });
+
+          // Sortable segments
+          if (typeof Sortable !== 'undefined') {
+            new Sortable(area, {
+              handle: '.segment-handle',
+              animation: 150,
+              onEnd: function(evt) {
+                const oldIdx = evt.oldIndex;
+                const newIdx = evt.newIndex;
+                const moved = chapter.content.splice(oldIdx, 1)[0];
+                chapter.content.splice(newIdx, 0, moved);
+                saveState();
+                renderChapterContent(chapter);
+              }
+            });
+          }
+        }
+      }
+
+      // Add segment buttons for text chapter
+      document.addEventListener('click', (e) => {
+        if (e.target.id === 'addTextSegmentBtn') {
+          const chapter = getActiveChapter();
+          if (!chapter) return;
+          chapter.content.push({ type: 'text', data: '' });
+          saveState();
+          renderChapterContent(chapter);
+        }
+        if (e.target.id === 'addImageSegmentBtn') {
+          const chapter = getActiveChapter();
+          if (!chapter) return;
+          chapter.content.push({ type: 'image', data: '' });
+          saveState();
+          renderChapterContent(chapter);
+        }
+        if (e.target.id === 'addIllustrationImageBtn') {
+          const chapter = getActiveChapter();
+          if (!chapter) return;
+          chapter.content.push({ type: 'image', data: '' });
+          saveState();
+          renderChapterContent(chapter);
+        }
+        if (e.target.id === 'addChapterBtn') {
+          addChapter('text');
+        }
+      });
+
+      // ========== PDF GENERATION ==========
+      downloadBtn.addEventListener('click', async () => {
+        try {
+          await generatePDF();
+        } catch (err) {
+          console.error(err);
+          alert('Gagal membuat PDF: ' + err.message);
+        }
+      });
+
+      async function generatePDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        doc.deletePage(1); // remove initial blank
+
+        const margin = 20;
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const maxWidth = pageWidth - margin * 2;
+        const lineHeight = 6;
+
+        // Helper: add text with auto page break
+        function addTextSegment(doc, text, startY, fontSize = 12, fontStyle = 'normal') {
+          doc.setFontSize(fontSize);
+          doc.setFont('helvetica', fontStyle);
+          const lines = doc.splitTextToSize(text, maxWidth);
+          let y = startY;
+          for (let line of lines) {
+            if (y + lineHeight > pageHeight - margin) {
+              doc.addPage('a4');
+              y = margin;
+            }
+            doc.text(line, margin, y);
+            y += lineHeight;
+          }
+          return y;
+        }
+
+        // 1. COVER IMAGE (full page custom size)
+        if (state.cover.image) {
+          try {
+            const img = await loadImageFromUrl(state.cover.image);
+            const wMM = (img.naturalWidth / 96) * 25.4;
+            const hMM = (img.naturalHeight / 96) * 25.4;
+            doc.addPage([wMM, hMM]);
+            doc.addImage(img, 'JPEG', 0, 0, wMM, hMM, undefined, 'FAST');
+          } catch (e) {
+            console.warn('Cover image error, skip', e);
+          }
+        }
+
+        // 2. COVER TEXT PAGE
+        doc.addPage('a4');
+        let y = margin;
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text(state.cover.title || 'Tanpa Judul', pageWidth/2, y, { align: 'center' });
+        y += 14;
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        const infos = [
+          ['Penulis: ', state.cover.author],
+          ['Ilustrator: ', state.cover.illustrator],
+          ['Penerjemah: ', state.cover.translator],
+          ['Genre: ', state.cover.genre]
+        ];
+        for (let [label, val] of infos) {
+          if (y > pageHeight - margin) { doc.addPage('a4'); y = margin; }
+          doc.text(label + (val || '-'), margin, y);
+          y += 7;
+        }
+        y += 3;
+        if (state.cover.synopsis) {
+          doc.setFont('helvetica', 'italic');
+          y = addTextSegment(doc, 'Sinopsis: ' + state.cover.synopsis, y, 11, 'italic');
+        }
+
+        // 3. CHAPTERS
+        for (let chapter of state.chapters) {
+          if (chapter.type === 'illustration') {
+            for (let seg of chapter.content) {
+              if (seg.type === 'image' && seg.data) {
+                try {
+                  const img = await loadImageFromUrl(seg.data);
+                  const wMM = (img.naturalWidth / 96) * 25.4;
+                  const hMM = (img.naturalHeight / 96) * 25.4;
+                  doc.addPage([wMM, hMM]);
+                  doc.addImage(img, 'JPEG', 0, 0, wMM, hMM, undefined, 'FAST');
+                } catch (e) {
+                  console.warn('Chapter image error', e);
+                }
+              }
+            }
+          } else {
+            // text chapter with mixed segments
+            let needNewPage = true;
+            let currentY = margin;
+            for (let seg of chapter.content) {
+              if (seg.type === 'text') {
+                if (needNewPage) {
+                  doc.addPage('a4');
+                  currentY = margin;
+                  needNewPage = false;
+                }
+                if (seg.data.trim()) {
+                  currentY = addTextSegment(doc, seg.data, currentY, 12, 'normal');
+                }
+              } else if (seg.type === 'image') {
+                if (seg.data) {
+                  try {
+                    const img = await loadImageFromUrl(seg.data);
+                    const wMM = (img.naturalWidth / 96) * 25.4;
+                    const hMM = (img.naturalHeight / 96) * 25.4;
+                    doc.addPage([wMM, hMM]);
+                    doc.addImage(img, 'JPEG', 0, 0, wMM, hMM, undefined, 'FAST');
+                    needNewPage = true; // next text will start fresh A4
+                  } catch (e) {
+                    console.warn('Segment image error', e);
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        doc.save('Hikari_Novel.pdf');
+      }
+
+      function escapeHtml(text) {
+        return String(text).replace(/[&<>"]/g, function(m) {
+          if (m === '&') return '&amp;';
+          if (m === '<') return '&lt;';
+          if (m === '>') return '&gt;';
+          if (m === '"') return '&quot;';
+          return m;
+        });
+      }
+
+      // ========== INITIAL LOAD ==========
+      window.addEventListener('load', async () => {
+        await loadState();
+        if (!state.chapters) state.chapters = [];
+        if (!state.cover) state.cover = JSON.parse(JSON.stringify(defaultState.cover));
+        switchTab('cover');
+        renderCoverForm();
+        renderChapterList();
+      });
+
+      // ========== PWA SERVICE WORKER (blob) ==========
+      if ('serviceWorker' in navigator) {
+        const swCode = `
+          self.addEventListener('install', event => {
+            self.skipWaiting();
+          });
+          self.addEventListener('activate', event => {
+            event.waitUntil(clients.claim());
+          });
+          self.addEventListener('fetch', event => {
+            event.respondWith(
+              caches.match(event.request).then(response => response || fetch(event.request))
+            );
+          });
+        `;
+        const blob = new Blob([swCode], { type: 'application/javascript' });
+        const swUrl = URL.createObjectURL(blob);
+        navigator.serviceWorker.register(swUrl, { scope: '/' }).catch(() => {
+          // Fallback: coba tanpa scope
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
