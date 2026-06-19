@@ -8,13 +8,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Hikari PDF Studio">
   <title>Hikari Pdf Studio v3</title>
+  <!-- Manifest PWA (data URI) -->
   <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIkhpa2FyaSBQZGYgU3R1ZGlvIiwKICAic2hvcnRfbmFtZSI6ICJIaWthcmkgUERGIiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmZjZiNmIiLAogICJ0aGVtZV9jb2xvciI6ICIjZmY2YjZiIiwKICAiaWNvbnMiOiBbXQp9">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js">
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js">
-  </script>
+  <!-- CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
   <style>
     :root {
       --bg: #f8f9fc;
@@ -40,11 +39,7 @@
       --border: #3a3a50;
       --shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin:0; padding:0; box-sizing:border-box; }
     body {
       font-family: var(--font);
       background: var(--bg);
@@ -113,21 +108,11 @@
       border-color: var(--primary);
       color: white;
     }
-    button.primary:hover {
-      background: var(--primary-hover);
-    }
-    button.danger {
-      border-color: var(--danger);
-      color: var(--danger);
-    }
-    button.danger:hover {
-      background: var(--danger);
-      color: white;
-    }
+    button.primary:hover { background: var(--primary-hover); }
+    button.danger { border-color: var(--danger); color: var(--danger); }
+    button.danger:hover { background: var(--danger); color: white; }
     .icon-btn {
-      width: 42px;
-      height: 42px;
-      padding: 0;
+      width: 42px; height: 42px; padding: 0;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -161,9 +146,7 @@
       margin-bottom: 20px;
       transition: background var(--transition);
     }
-    .form-group {
-      margin-bottom: 16px;
-    }
+    .form-group { margin-bottom: 16px; }
     label {
       display: block;
       font-weight: 600;
@@ -184,13 +167,8 @@
       color: var(--text);
       transition: background var(--transition), border var(--transition);
     }
-    textarea {
-      resize: vertical;
-      min-height: 100px;
-    }
-    select {
-      width: auto;
-    }
+    textarea { resize: vertical; min-height: 100px; }
+    select { width: auto; }
     .chapter-list-item {
       display: flex;
       align-items: center;
@@ -230,15 +208,8 @@
       align-items: center;
       gap: 10px;
     }
-    .segment-handle {
-      cursor: grab;
-      color: var(--text-secondary);
-    }
-    .segment-actions {
-      margin-left: auto;
-      display: flex;
-      gap: 6px;
-    }
+    .segment-handle { cursor: grab; color: var(--text-secondary); }
+    .segment-actions { margin-left: auto; display: flex; gap: 6px; }
     .image-preview {
       max-width: 100%;
       max-height: 200px;
@@ -246,26 +217,12 @@
       border-radius: 10px;
       border: 1px solid var(--border);
     }
-    .flex-row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .chapter-editor {
-      margin-top: 20px;
-    }
+    .flex-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .chapter-editor { margin-top: 20px; }
     @media (max-width: 600px) {
-      .logo {
-        font-size: 1.3rem;
-      }
-      button {
-        padding: 8px 14px;
-        font-size: 0.8rem;
-      }
-      .tabs {
-        gap: 6px;
-      }
+      .logo { font-size: 1.3rem; }
+      button { padding: 8px 14px; font-size: 0.8rem; }
+      .tabs { gap: 6px; }
     }
   </style>
 </head>
@@ -336,7 +293,6 @@
       let activeChapterId = null;
       let activeTab = 'cover';
 
-      // DOM
       const $ = (sel) => document.querySelector(sel);
       const $$ = (sel) => document.querySelectorAll(sel);
 
