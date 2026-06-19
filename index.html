@@ -1,0 +1,1884 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hikari Pdf Studio</title>
+    <meta name="description" content="Buat novel PDF profesional dengan gambar full-page, cover, dan bab yang responsif.">
+    <!-- jsPDF Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+    </script>
+    <style>
+        :root {
+            --bg: #f8f9fa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f0f1f3;
+            --text: #1a1d23;
+            --text-secondary: #5a5f6b;
+            --text-tertiary: #8b8f98;
+            --border: #e2e4e9;
+            --accent: #6366f1;
+            --accent-hover: #5558e6;
+            --accent-light: #eef0ff;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --danger-light: #fef2f2;
+            --success: #10b981;
+            --success-light: #ecfdf5;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.06);
+            --radius-sm: 8px;
+            --radius: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+            --sidebar-width: 280px;
+            --header-height: 60px;
+        }
+
+        [data-theme="dark"] {
+            --bg: #111318;
+            --bg-secondary: #1a1d25;
+            --bg-tertiary: #22252f;
+            --text: #e8eaef;
+            --text-secondary: #b0b5c0;
+            --text-tertiary: #787d8a;
+            --border: #2a2d38;
+            --accent: #818cf8;
+            --accent-hover: #9399ff;
+            --accent-light: #1e2040;
+            --danger: #f87171;
+            --danger-hover: #ef4444;
+            --danger-light: #2d1518;
+            --success: #34d399;
+            --success-light: #142b24;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.25);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.4), 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 15px;
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            transition: background var(--transition), color var(--transition);
+            overflow-x: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            transition: transform var(--transition), background var(--transition), border var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+        .sidebar-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .sidebar-logo {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .sidebar-title {
+            font-weight: 700;
+            font-size: 1.05rem;
+            letter-spacing: -0.01em;
+            color: var(--text);
+            white-space: nowrap;
+        }
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .sidebar-nav .nav-section {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-tertiary);
+            padding: 8px 12px 4px;
+            font-weight: 600;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition);
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            position: relative;
+        }
+        .nav-item:hover {
+            background: var(--bg-tertiary);
+            color: var(--text);
+        }
+        .nav-item.active {
+            background: var(--accent-light);
+            color: var(--accent);
+            font-weight: 600;
+        }
+        .nav-item .icon {
+            width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+            font-size: 1rem;
+        }
+        .nav-item .badge {
+            margin-left: auto;
+            font-size: 0.7rem;
+            background: var(--bg-tertiary);
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        .nav-item.active .badge {
+            background: var(--accent);
+            color: #fff;
+        }
+        .add-chapter-btn {
+            margin: 8px 12px;
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            border: 2px dashed var(--border);
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.85rem;
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: calc(100% - 24px);
+        }
+        .add-chapter-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-light);
+        }
+        .sidebar-footer {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+        }
+        .save-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: var(--success);
+            font-weight: 500;
+        }
+        .save-indicator.saving {
+            color: var(--text-tertiary);
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: margin var(--transition);
+        }
+        .topbar {
+            height: var(--header-height);
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            gap: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            transition: background var(--transition), border var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+        .hamburger {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 1.4rem;
+            line-height: 1;
+            transition: background var(--transition);
+        }
+        .hamburger:hover {
+            background: var(--bg-tertiary);
+        }
+        .topbar-title {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text);
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .btn {
+            padding: 9px 18px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border: none;
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            white-space: nowrap;
+            font-family: var(--font-sans);
+            letter-spacing: -0.01em;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: var(--shadow-sm);
+        }
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid var(--border);
+            color: var(--text);
+        }
+        .btn-outline:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--text-tertiary);
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.78rem;
+            border-radius: 6px;
+        }
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: 1.5px solid var(--border);
+            cursor: pointer;
+            color: var(--text);
+            font-size: 1.1rem;
+            transition: all var(--transition);
+        }
+        .btn-icon:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--text-tertiary);
+        }
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+        .btn-danger:hover {
+            background: var(--danger-hover);
+        }
+        .btn-ghost {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 6px 10px;
+            cursor: pointer;
+        }
+        .btn-ghost:hover {
+            color: var(--text);
+        }
+
+        /* Editor Area */
+        .editor-area {
+            flex: 1;
+            padding: 24px 28px;
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            overflow-y: auto;
+            transition: padding var(--transition);
+        }
+        .editor-section {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: 24px 28px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: all var(--transition);
+        }
+        .editor-section h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .editor-section h3 .section-icon {
+            font-size: 1.2rem;
+        }
+        .form-group {
+            margin-bottom: 14px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.82rem;
+            margin-bottom: 5px;
+            color: var(--text-secondary);
+            letter-spacing: 0.01em;
+        }
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            border: 1.5px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            transition: all var(--transition);
+            resize: vertical;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-light);
+        }
+        .form-group textarea {
+            min-height: 80px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        /* Blocks (untuk bab teks) */
+        .blocks-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .block-item {
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+            background: var(--bg);
+            position: relative;
+            transition: all var(--transition);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .block-item.image-block {
+            border-color: var(--accent);
+            background: var(--accent-light);
+            border-style: dashed;
+        }
+        .block-item .block-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .block-item .block-actions {
+            display: flex;
+            gap: 6px;
+            margin-left: auto;
+        }
+        .block-item textarea {
+            width: 100%;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            background: var(--bg-secondary);
+            color: var(--text);
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 60px;
+            transition: all var(--transition);
+        }
+        .block-item textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-light);
+        }
+        .block-item img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: var(--radius-sm);
+            object-fit: contain;
+            background: #000;
+            cursor: pointer;
+        }
+        .block-item .image-placeholder {
+            width: 100%;
+            height: 120px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-tertiary);
+            font-size: 0.85rem;
+            gap: 8px;
+            cursor: pointer;
+            transition: all var(--transition);
+            border: 2px dashed var(--border);
+        }
+        .block-item .image-placeholder:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-light);
+        }
+        .add-block-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            padding: 8px 0;
+        }
+
+        /* Cover preview */
+        .cover-preview {
+            width: 100%;
+            max-width: 200px;
+            aspect-ratio: 2/3;
+            border-radius: var(--radius);
+            object-fit: cover;
+            border: 2px solid var(--border);
+            background: var(--bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-tertiary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all var(--transition);
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .cover-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .cover-preview:hover {
+            border-color: var(--accent);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .toast {
+            padding: 12px 18px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-secondary);
+            color: var(--text);
+            box-shadow: var(--shadow-lg);
+            font-size: 0.85rem;
+            font-weight: 500;
+            animation: slideIn 0.3s ease;
+            border: 1px solid var(--border);
+            max-width: 380px;
+        }
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+        .toast.error {
+            border-left: 4px solid var(--danger);
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+        }
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: 24px 28px;
+            max-width: 480px;
+            width: 100%;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+        }
+        .modal h3 {
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+        }
+        .modal .form-group {
+            margin-bottom: 12px;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                box-shadow: var(--shadow-lg);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .sidebar-overlay.active {
+                display: block;
+            }
+            .main-content {
+                margin-left: 0 !important;
+            }
+            .hamburger {
+                display: flex;
+            }
+            .editor-area {
+                padding: 16px 12px;
+            }
+            .editor-section {
+                padding: 16px 14px;
+                border-radius: var(--radius);
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .topbar {
+                padding: 0 12px;
+            }
+            .btn {
+                padding: 7px 14px;
+                font-size: 0.8rem;
+            }
+            .topbar-title {
+                font-size: 0.9rem;
+            }
+            .cover-preview {
+                max-width: 140px;
+            }
+            .toast-container {
+                bottom: 12px;
+                right: 12px;
+                left: 12px;
+            }
+            .toast {
+                max-width: 100%;
+            }
+        }
+        @media (max-width: 480px) {
+            .btn span.btn-label {
+                display: none;
+            }
+            .btn {
+                padding: 8px 10px;
+                gap: 4px;
+            }
+            .topbar-actions {
+                gap: 4px;
+            }
+            .editor-section {
+                padding: 12px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">✨</div>
+            <span class="sidebar-title">Hikari Pdf Studio</span>
+        </div>
+        <nav class="sidebar-nav" id="sidebarNav">
+            <div class="nav-section">Proyek</div>
+            <button class="nav-item active" data-section="cover">
+                <span class="icon">📕</span> Cover
+            </button>
+            <div class="nav-section" style="margin-top:8px;">Daftar Bab</div>
+            <div id="chapterNavList"></div>
+        </nav>
+        <button class="add-chapter-btn" id="addChapterBtn" title="Tambah Bab Baru">
+            ＋ Tambah Bab
+        </button>
+        <div class="sidebar-footer">
+            <span class="save-indicator" id="saveIndicator">💾 Tersimpan</span>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <header class="topbar">
+            <button class="hamburger" id="hamburgerBtn" aria-label="Menu">☰</button>
+            <span class="topbar-title" id="topbarTitle">📕 Cover Novel</span>
+            <div class="topbar-actions">
+                <button class="btn-icon" id="themeToggle" title="Toggle Dark/Light Mode" aria-label="Toggle tema">
+                    🌓
+                </button>
+                <button class="btn btn-outline btn-sm" id="resetBtn" title="Reset semua data">
+                    <span>🔄</span> <span class="btn-label">Reset</span>
+                </button>
+                <button class="btn btn-primary" id="downloadPdfBtn">
+                    <span>📥</span> <span class="btn-label">Download PDF</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Editor Area -->
+        <div class="editor-area" id="editorArea">
+            <!-- Cover Section (default) -->
+            <div id="section-cover" class="editor-section">
+                <h3><span class="section-icon">📕</span> Cover Novel</h3>
+                <div class="form-group">
+                    <label>Gambar Cover (full-page)</label>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button class="btn btn-outline btn-sm" id="uploadCoverBtn">📤 Upload Gambar</button>
+                        <button class="btn btn-outline btn-sm" id="urlCoverBtn">🔗 Dari URL</button>
+                        <button class="btn btn-ghost btn-sm" id="removeCoverBtn" style="color:var(--danger);">🗑 Hapus</button>
+                    </div>
+                    <input type="file" id="coverFileInput" accept="image/*" style="display:none;">
+                    <div class="cover-preview" id="coverPreview" title="Klik untuk ganti gambar">
+                        <span>Tidak ada gambar cover</span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Judul Novel</label>
+                        <input type="text" id="coverTitle" placeholder="Masukkan judul novel...">
+                    </div>
+                    <div class="form-group">
+                        <label>Penulis</label>
+                        <input type="text" id="coverAuthor" placeholder="Nama penulis...">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Ilustrator</label>
+                        <input type="text" id="coverIllustrator" placeholder="Nama ilustrator...">
+                    </div>
+                    <div class="form-group">
+                        <label>Penerjemah</label>
+                        <input type="text" id="coverTranslator" placeholder="Nama penerjemah...">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Genre</label>
+                        <input type="text" id="coverGenre" placeholder="Contoh: Fantasi, Romansa...">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Sinopsis</label>
+                    <textarea id="coverSynopsis" rows="4" placeholder="Tulis sinopsis singkat novel..."></textarea>
+                </div>
+            </div>
+
+            <!-- Chapter Editor (dynamic, hidden by default) -->
+            <div id="section-chapter" class="editor-section" style="display:none;">
+                <h3><span class="section-icon">📖</span> <span id="chapterEditorTitle">Bab</span></h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Judul Bab</label>
+                        <input type="text" id="chapterTitle" placeholder="Judul bab...">
+                    </div>
+                    <div class="form-group">
+                        <label>Tipe Bab</label>
+                        <select id="chapterType">
+                            <option value="text">📝 Bab Teks (teks + gambar full-page)</option>
+                            <option value="illustration">🎨 Bab Ilustrasi (hanya gambar full-page)</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- Text chapter blocks -->
+                <div id="textBlocksContainer" style="display:flex;flex-direction:column;gap:12px;">
+                    <label style="font-weight:600;font-size:0.82rem;color:var(--text-secondary);">Konten Bab (blok teks & gambar)</label>
+                    <div class="blocks-container" id="blocksContainer"></div>
+                    <div class="add-block-row">
+                        <button class="btn btn-outline btn-sm" id="addTextBlockBtn">📝 + Teks</button>
+                        <button class="btn btn-outline btn-sm" id="addImageBlockBtn">🖼 + Gambar Full-Page</button>
+                    </div>
+                </div>
+                <!-- Illustration chapter (image grid) -->
+                <div id="illustrationContainer" style="display:none;">
+                    <label style="font-weight:600;font-size:0.82rem;color:var(--text-secondary);">Gambar Full-Page</label>
+                    <div id="illustrationGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:8px;"></div>
+                    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+                        <button class="btn btn-outline btn-sm" id="uploadIllusBtn">📤 Upload Gambar</button>
+                        <button class="btn btn-outline btn-sm" id="urlIllusBtn">🔗 Dari URL</button>
+                    </div>
+                    <input type="file" id="illusFileInput" accept="image/*" multiple style="display:none;">
+                </div>
+                <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">
+                    <button class="btn btn-danger btn-sm" id="deleteChapterBtn">🗑 Hapus Bab</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- URL Modal -->
+    <div class="modal-overlay" id="urlModal" style="display:none;">
+        <div class="modal">
+            <h3>🔗 Tambah Gambar dari URL</h3>
+            <div class="form-group">
+                <label>URL Gambar</label>
+                <input type="url" id="urlInput" placeholder="https://example.com/image.jpg">
+            </div>
+            <p style="font-size:0.75rem;color:var(--text-tertiary);margin-top:4px;">
+                ⚠️ Pastikan URL mendukung CORS atau berasal dari domain yang mengizinkan akses gambar.
+            </p>
+            <div class="modal-actions">
+                <button class="btn btn-outline btn-sm" id="urlCancelBtn">Batal</button>
+                <button class="btn btn-primary btn-sm" id="urlConfirmBtn">Tambah</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Hidden canvas for image processing -->
+    <canvas id="hiddenCanvas" style="display:none;"></canvas>
+
+    <script>
+        (function() {
+            // ==================== STATE MANAGEMENT ====================
+            const STORAGE_KEY = 'hikari_pdf_studio_data';
+            const MAX_IMAGE_DIM = 1500; // max pixel dimension for storage/PDF quality balance
+            const JPEG_QUALITY = 0.85;
+
+            let projectData = {
+                cover: {
+                    image: null, // base64 string
+                    title: '',
+                    author: '',
+                    illustrator: '',
+                    translator: '',
+                    genre: '',
+                    synopsis: ''
+                },
+                chapters: [], // { id, title, type: 'text'|'illustration', blocks: [{type:'text',content:''}|{type:'image',data:base64}], images: [base64] }
+                activeSection: 'cover',
+                activeChapterId: null,
+            };
+
+            let urlModalCallback = null; // callback for URL modal
+
+            // ==================== DOM REFS ====================
+            const $sidebar = document.getElementById('sidebar');
+            const $sidebarOverlay = document.getElementById('sidebarOverlay');
+            const $hamburgerBtn = document.getElementById('hamburgerBtn');
+            const $mainContent = document.getElementById('mainContent');
+            const $editorArea = document.getElementById('editorArea');
+            const $topbarTitle = document.getElementById('topbarTitle');
+            const $saveIndicator = document.getElementById('saveIndicator');
+            const $themeToggle = document.getElementById('themeToggle');
+            const $downloadPdfBtn = document.getElementById('downloadPdfBtn');
+            const $resetBtn = document.getElementById('resetBtn');
+            const $chapterNavList = document.getElementById('chapterNavList');
+            const $addChapterBtn = document.getElementById('addChapterBtn');
+            const $sidebarNav = document.getElementById('sidebarNav');
+            const $toastContainer = document.getElementById('toastContainer');
+            const $hiddenCanvas = document.getElementById('hiddenCanvas');
+            const $urlModal = document.getElementById('urlModal');
+            const $urlInput = document.getElementById('urlInput');
+            const $urlCancelBtn = document.getElementById('urlCancelBtn');
+            const $urlConfirmBtn = document.getElementById('urlConfirmBtn');
+
+            // Section: Cover
+            const $sectionCover = document.getElementById('section-cover');
+            const $coverFileInput = document.getElementById('coverFileInput');
+            const $coverPreview = document.getElementById('coverPreview');
+            const $coverTitle = document.getElementById('coverTitle');
+            const $coverAuthor = document.getElementById('coverAuthor');
+            const $coverIllustrator = document.getElementById('coverIllustrator');
+            const $coverTranslator = document.getElementById('coverTranslator');
+            const $coverGenre = document.getElementById('coverGenre');
+            const $coverSynopsis = document.getElementById('coverSynopsis');
+
+            // Section: Chapter
+            const $sectionChapter = document.getElementById('section-chapter');
+            const $chapterEditorTitle = document.getElementById('chapterEditorTitle');
+            const $chapterTitle = document.getElementById('chapterTitle');
+            const $chapterType = document.getElementById('chapterType');
+            const $textBlocksContainer = document.getElementById('textBlocksContainer');
+            const $blocksContainer = document.getElementById('blocksContainer');
+            const $illustrationContainer = document.getElementById('illustrationContainer');
+            const $illustrationGrid = document.getElementById('illustrationGrid');
+            const $illusFileInput = document.getElementById('illusFileInput');
+
+            // ==================== AUTO-SAVE ====================
+            let saveTimeout = null;
+            let isSaving = false;
+
+            function markDirty() {
+                if (saveTimeout) clearTimeout(saveTimeout);
+                $saveIndicator.textContent = '💾 Menyimpan...';
+                $saveIndicator.className = 'save-indicator saving';
+                saveTimeout = setTimeout(() => {
+                    saveProject();
+                    $saveIndicator.textContent = '💾 Tersimpan';
+                    $saveIndicator.className = 'save-indicator';
+                }, 600);
+            }
+
+            function saveProject() {
+                try {
+                    const serialized = JSON.stringify(projectData);
+                    localStorage.setItem(STORAGE_KEY, serialized);
+                    isSaving = false;
+                } catch (e) {
+                    if (e.name === 'QuotaExceededError') {
+                        showToast('⚠️ Penyimpanan penuh! Hapus beberapa gambar atau bab.', 'error');
+                    } else {
+                        showToast('⚠️ Gagal menyimpan: ' + e.message, 'error');
+                    }
+                }
+            }
+
+            function loadProject() {
+                try {
+                    const saved = localStorage.getItem(STORAGE_KEY);
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        // Merge with defaults
+                        projectData.cover = { ...projectData.cover, ...(parsed.cover || {}) };
+                        projectData.chapters = parsed.chapters || [];
+                        projectData.activeSection = parsed.activeSection || 'cover';
+                        projectData.activeChapterId = parsed.activeChapterId || null;
+                    }
+                } catch (e) {
+                    console.warn('Gagal memuat data, menggunakan default.', e);
+                }
+            }
+
+            // ==================== TOAST ====================
+            function showToast(message, type = 'success') {
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.textContent = message;
+                $toastContainer.appendChild(toast);
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateY(20px)';
+                    toast.style.transition = '0.3s ease';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+
+            // ==================== IMAGE UTILS ====================
+            function compressImage(base64, maxDim = MAX_IMAGE_DIM, quality = JPEG_QUALITY) {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let w = img.width;
+                        let h = img.height;
+                        if (Math.max(w, h) <= maxDim) {
+                            resolve(base64);
+                            return;
+                        }
+                        const ratio = Math.min(maxDim / w, maxDim / h);
+                        w = Math.round(w * ratio);
+                        h = Math.round(h * ratio);
+                        const canvas = $hiddenCanvas;
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.onerror = () => resolve(base64);
+                    img.src = base64;
+                });
+            }
+
+            function loadImageFromFile(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        const compressed = await compressImage(e.target.result);
+                        resolve(compressed);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            async function loadImageFromURL(url) {
+                // Try fetch, handle CORS
+                try {
+                    const resp = await fetch(url, { mode: 'cors' });
+                    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                    const blob = await resp.blob();
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = async (e) => {
+                            const compressed = await compressImage(e.target.result);
+                            resolve(compressed);
+                        };
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
+                } catch (e) {
+                    // Fallback: try creating img element (works for some CORS-enabled URLs)
+                    return new Promise((resolve, reject) => {
+                        const img = new Image();
+                        img.crossOrigin = 'anonymous';
+                        img.onload = async () => {
+                            const canvas = $hiddenCanvas;
+                            canvas.width = Math.min(img.width, MAX_IMAGE_DIM);
+                            canvas.height = Math.min(img.height, MAX_IMAGE_DIM);
+                            const ratio = Math.min(MAX_IMAGE_DIM / img.width, MAX_IMAGE_DIM / img.height, 1);
+                            canvas.width = Math.round(img.width * ratio);
+                            canvas.height = Math.round(img.height * ratio);
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            const dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+                            resolve(dataUrl);
+                        };
+                        img.onerror = () => reject(new Error(
+                            'Gagal memuat gambar. Mungkin URL tidak mengizinkan akses (CORS).'));
+                        img.src = url;
+                    });
+                }
+            }
+
+            function getImageAspectRatio(base64) {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => resolve({ width: img.width, height: img.height, ratio: img.width / img
+                            .height });
+                    img.onerror = () => resolve({ width: 1, height: 1, ratio: 1 });
+                    img.src = base64;
+                });
+            }
+
+            // ==================== URL MODAL ====================
+            function openUrlModal(callback) {
+                urlModalCallback = callback;
+                $urlInput.value = '';
+                $urlModal.style.display = 'flex';
+                $urlInput.focus();
+            }
+
+            function closeUrlModal() {
+                $urlModal.style.display = 'none';
+                urlModalCallback = null;
+            }
+            $urlCancelBtn.addEventListener('click', closeUrlModal);
+            $urlModal.addEventListener('click', (e) => {
+                if (e.target === $urlModal) closeUrlModal();
+            });
+            $urlConfirmBtn.addEventListener('click', async () => {
+                const url = $urlInput.value.trim();
+                if (!url) {
+                    showToast('Masukkan URL gambar yang valid.', 'error');
+                    return;
+                }
+                if (urlModalCallback) {
+                    try {
+                        $urlConfirmBtn.disabled = true;
+                        $urlConfirmBtn.textContent = 'Memuat...';
+                        const base64 = await loadImageFromURL(url);
+                        urlModalCallback(base64);
+                        closeUrlModal();
+                        showToast('✅ Gambar berhasil ditambahkan!');
+                    } catch (e) {
+                        showToast('❌ ' + e.message, 'error');
+                    } finally {
+                        $urlConfirmBtn.disabled = false;
+                        $urlConfirmBtn.textContent = 'Tambah';
+                    }
+                }
+            });
+
+            // ==================== SIDEBAR ====================
+            function updateChapterNav() {
+                $chapterNavList.innerHTML = '';
+                projectData.chapters.forEach((ch, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'nav-item';
+                    if (projectData.activeChapterId === ch.id) btn.classList.add('active');
+                    const icon = ch.type === 'illustration' ? '🎨' : '📝';
+                    btn.innerHTML =
+                        `<span class="icon">${icon}</span> ${escapeHTML(ch.title || 'Bab ' + (index + 1))} <span class="badge">${ch.type === 'illustration' ? (ch.images?.length || 0) + ' img' : (ch.blocks?.length || 0) + ' blk'}</span>`;
+                    btn.addEventListener('click', () => selectChapter(ch.id));
+                    $chapterNavList.appendChild(btn);
+                });
+                // Update cover nav item
+                const coverNav = $sidebarNav.querySelector('[data-section="cover"]');
+                if (coverNav && projectData.activeSection === 'cover') {
+                    coverNav.classList.add('active');
+                } else if (coverNav) {
+                    coverNav.classList.remove('active');
+                }
+                // Update chapter nav items active state
+                $chapterNavList.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                if (projectData.activeChapterId) {
+                    const activeItem = $chapterNavList.querySelector(
+                        `[data-chapter-id="${projectData.activeChapterId}"]`);
+                    // Find by index instead
+                    const idx = projectData.chapters.findIndex(ch => ch.id === projectData
+                        .activeChapterId);
+                    if (idx >= 0 && $chapterNavList.children[idx]) {
+                        $chapterNavList.children[idx].classList.add('active');
+                    }
+                }
+            }
+
+            function selectSection(section) {
+                projectData.activeSection = section;
+                projectData.activeChapterId = null;
+                $sectionCover.style.display = (section === 'cover') ? '' : 'none';
+                $sectionChapter.style.display = (section === 'cover') ? 'none' : '';
+                if (section === 'cover') {
+                    $topbarTitle.textContent = '📕 Cover Novel';
+                }
+                updateChapterNav();
+                markDirty();
+                // Close sidebar on mobile
+                closeSidebar();
+            }
+
+            function selectChapter(chapterId) {
+                projectData.activeSection = 'chapter';
+                projectData.activeChapterId = chapterId;
+                $sectionCover.style.display = 'none';
+                $sectionChapter.style.display = '';
+                const ch = projectData.chapters.find(c => c.id === chapterId);
+                if (ch) {
+                    $chapterEditorTitle.textContent = 'Bab: ' + (ch.title || '(tanpa judul)');
+                    $chapterTitle.value = ch.title || '';
+                    $chapterType.value = ch.type;
+                    renderChapterEditor(ch);
+                    $topbarTitle.textContent = '📖 ' + (ch.title || 'Bab');
+                }
+                updateChapterNav();
+                markDirty();
+                closeSidebar();
+            }
+
+            function closeSidebar() {
+                $sidebar.classList.remove('open');
+                $sidebarOverlay.classList.remove('active');
+            }
+
+            $hamburgerBtn.addEventListener('click', () => {
+                $sidebar.classList.toggle('open');
+                $sidebarOverlay.classList.toggle('active');
+            });
+            $sidebarOverlay.addEventListener('click', closeSidebar);
+
+            // Cover nav item
+            $sidebarNav.querySelector('[data-section="cover"]').addEventListener('click', () => selectSection('cover'));
+
+            // Add chapter
+            $addChapterBtn.addEventListener('click', () => {
+                const newChapter = {
+                    id: 'ch_' + Date.now(),
+                    title: 'Bab ' + (projectData.chapters.length + 1),
+                    type: 'text',
+                    blocks: [{ type: 'text', content: '' }],
+                    images: [],
+                };
+                projectData.chapters.push(newChapter);
+                selectChapter(newChapter.id);
+                updateChapterNav();
+                markDirty();
+                showToast('✅ Bab baru ditambahkan!');
+            });
+
+            // ==================== CHAPTER EDITOR ====================
+            function renderChapterEditor(ch) {
+                if (ch.type === 'text') {
+                    $textBlocksContainer.style.display = '';
+                    $illustrationContainer.style.display = 'none';
+                    renderBlocks(ch);
+                } else {
+                    $textBlocksContainer.style.display = 'none';
+                    $illustrationContainer.style.display = '';
+                    renderIllustrationGrid(ch);
+                }
+            }
+
+            function renderBlocks(ch) {
+                $blocksContainer.innerHTML = '';
+                if (!ch.blocks || ch.blocks.length === 0) {
+                    ch.blocks = [{ type: 'text', content: '' }];
+                }
+                ch.blocks.forEach((block, index) => {
+                    const blockEl = createBlockElement(block, index, ch);
+                    $blocksContainer.appendChild(blockEl);
+                });
+            }
+
+            function createBlockElement(block, index, ch) {
+                const div = document.createElement('div');
+                div.className = 'block-item';
+                if (block.type === 'image') div.classList.add('image-block');
+                div.setAttribute('data-block-index', index);
+
+                const header = document.createElement('div');
+                header.className = 'block-header';
+                header.innerHTML =
+                    `<span>${block.type === 'text' ? '📝 Blok Teks' : '🖼 Gambar Full-Page'}</span> #${index + 1}`;
+
+                const actions = document.createElement('div');
+                actions.className = 'block-actions';
+                if (index > 0) {
+                    const upBtn = document.createElement('button');
+                    upBtn.className = 'btn btn-ghost btn-sm';
+                    upBtn.textContent = '↑';
+                    upBtn.title = 'Pindahkan ke atas';
+                    upBtn.addEventListener('click', () => {
+                        moveBlock(ch, index, index - 1);
+                    });
+                    actions.appendChild(upBtn);
+                }
+                if (index < ch.blocks.length - 1) {
+                    const downBtn = document.createElement('button');
+                    downBtn.className = 'btn btn-ghost btn-sm';
+                    downBtn.textContent = '↓';
+                    downBtn.title = 'Pindahkan ke bawah';
+                    downBtn.addEventListener('click', () => {
+                        moveBlock(ch, index, index + 1);
+                    });
+                    actions.appendChild(downBtn);
+                }
+                const delBtn = document.createElement('button');
+                delBtn.className = 'btn btn-ghost btn-sm';
+                delBtn.textContent = '🗑';
+                delBtn.title = 'Hapus blok';
+                delBtn.style.color = 'var(--danger)';
+                delBtn.addEventListener('click', () => {
+                    if (ch.blocks.length <= 1 && block.type === 'text') {
+                        showToast('Minimal harus ada 1 blok.', 'error');
+                        return;
+                    }
+                    ch.blocks.splice(index, 1);
+                    renderBlocks(ch);
+                    updateChapterNav();
+                    markDirty();
+                });
+                actions.appendChild(delBtn);
+                header.appendChild(actions);
+                div.appendChild(header);
+
+                if (block.type === 'text') {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = block.content || '';
+                    textarea.placeholder = 'Tulis konten bab di sini...';
+                    textarea.rows = 4;
+                    textarea.addEventListener('input', () => {
+                        block.content = textarea.value;
+                        markDirty();
+                    });
+                    div.appendChild(textarea);
+                } else {
+                    if (block.data) {
+                        const img = document.createElement('img');
+                        img.src = block.data;
+                        img.alt = 'Gambar full-page';
+                        img.title = 'Klik untuk ganti gambar';
+                        img.addEventListener('click', () => {
+                            triggerImagePick((newBase64) => {
+                                block.data = newBase64;
+                                renderBlocks(ch);
+                                updateChapterNav();
+                                markDirty();
+                            });
+                        });
+                        div.appendChild(img);
+                    } else {
+                        const placeholder = document.createElement('div');
+                        placeholder.className = 'image-placeholder';
+                        placeholder.textContent = '🖼 Klik untuk tambah gambar';
+                        placeholder.addEventListener('click', () => {
+                            triggerImagePick((newBase64) => {
+                                block.data = newBase64;
+                                renderBlocks(ch);
+                                updateChapterNav();
+                                markDirty();
+                            });
+                        });
+                        div.appendChild(placeholder);
+                    }
+                }
+                return div;
+            }
+
+            function moveBlock(ch, fromIndex, toIndex) {
+                const blocks = ch.blocks;
+                const [moved] = blocks.splice(fromIndex, 1);
+                blocks.splice(toIndex, 0, moved);
+                renderBlocks(ch);
+                updateChapterNav();
+                markDirty();
+            }
+
+            function triggerImagePick(callback) {
+                // Create temporary file input
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.addEventListener('change', async () => {
+                    if (input.files[0]) {
+                        const base64 = await loadImageFromFile(input.files[0]);
+                        callback(base64);
+                        showToast('✅ Gambar ditambahkan!');
+                    }
+                });
+                // Also show option for URL
+                const useUrl = confirm(
+                    'Klik "OK" untuk upload file gambar,\nKlik "Cancel" untuk menggunakan URL gambar.');
+                if (useUrl) {
+                    input.click();
+                } else {
+                    openUrlModal(callback);
+                }
+            }
+
+            function renderIllustrationGrid(ch) {
+                $illustrationGrid.innerHTML = '';
+                if (!ch.images) ch.images = [];
+                ch.images.forEach((imgData, index) => {
+                    const card = document.createElement('div');
+                    card.style.cssText = `
+                aspect-ratio:2/3;border-radius:var(--radius-sm);overflow:hidden;
+                border:2px solid var(--border);cursor:pointer;position:relative;
+                background:#000;display:flex;align-items:center;justify-content:center;
+                transition:all var(--transition);
+              `;
+                    card.innerHTML =
+                        `<img src="${imgData}" style="width:100%;height:100%;object-fit:contain;" alt="Ilustrasi ${index+1}">`;
+                    const delOverlay = document.createElement('div');
+                    delOverlay.style.cssText = `
+                position:absolute;top:4px;right:4px;width:28px;height:28px;
+                border-radius:50%;background:var(--danger);color:#fff;display:flex;
+                align-items:center;justify-content:center;cursor:pointer;font-size:14px;
+                opacity:0;transition:opacity 0.2s;
+              `;
+                    delOverlay.textContent = '×';
+                    delOverlay.title = 'Hapus gambar';
+                    delOverlay.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        ch.images.splice(index, 1);
+                        renderIllustrationGrid(ch);
+                        updateChapterNav();
+                        markDirty();
+                    });
+                    card.appendChild(delOverlay);
+                    card.addEventListener('mouseenter', () => delOverlay.style.opacity = '1');
+                    card.addEventListener('mouseleave', () => delOverlay.style.opacity = '0');
+                    card.addEventListener('click', () => {
+                        // Replace image
+                        triggerImagePick((newBase64) => {
+                            ch.images[index] = newBase64;
+                            renderIllustrationGrid(ch);
+                            updateChapterNav();
+                            markDirty();
+                        });
+                    });
+                    $illustrationGrid.appendChild(card);
+                });
+            }
+
+            // Chapter type change
+            $chapterType.addEventListener('change', () => {
+                const ch = getActiveChapter();
+                if (!ch) return;
+                ch.type = $chapterType.value;
+                if (ch.type === 'text') {
+                    if (!ch.blocks) ch.blocks = [{ type: 'text', content: '' }];
+                } else {
+                    if (!ch.images) ch.images = [];
+                }
+                renderChapterEditor(ch);
+                updateChapterNav();
+                markDirty();
+            });
+
+            // Chapter title input
+            $chapterTitle.addEventListener('input', () => {
+                const ch = getActiveChapter();
+                if (!ch) return;
+                ch.title = $chapterTitle.value;
+                $chapterEditorTitle.textContent = 'Bab: ' + (ch.title || '(tanpa judul)');
+                $topbarTitle.textContent = '📖 ' + (ch.title || 'Bab');
+                updateChapterNav();
+                markDirty();
+            });
+
+            function getActiveChapter() {
+                return projectData.chapters.find(c => c.id === projectData.activeChapterId);
+            }
+
+            // Add text block
+            document.getElementById('addTextBlockBtn').addEventListener('click', () => {
+                const ch = getActiveChapter();
+                if (!ch) return;
+                if (!ch.blocks) ch.blocks = [];
+                ch.blocks.push({ type: 'text', content: '' });
+                renderBlocks(ch);
+                updateChapterNav();
+                markDirty();
+            });
+
+            // Add image block
+            document.getElementById('addImageBlockBtn').addEventListener('click', () => {
+                const ch = getActiveChapter();
+                if (!ch) return;
+                if (!ch.blocks) ch.blocks = [];
+                triggerImagePick((base64) => {
+                    ch.blocks.push({ type: 'image', data: base64 });
+                    renderBlocks(ch);
+                    updateChapterNav();
+                    markDirty();
+                });
+            });
+
+            // Illustration upload
+            document.getElementById('uploadIllusBtn').addEventListener('click', () => {
+                $illusFileInput.click();
+            });
+            $illusFileInput.addEventListener('change', async () => {
+                const ch = getActiveChapter();
+                if (!ch) return;
+                if (!ch.images) ch.images = [];
+                for (const file of $illusFileInput.files) {
+                    const base64 = await loadImageFromFile(file);
+                    ch.images.push(base64);
+                }
+                $illusFileInput.value = '';
+                renderIllustrationGrid(ch);
+                updateChapterNav();
+                markDirty();
+                showToast(`✅ ${$illusFileInput.files.length} gambar ditambahkan!`);
+            });
+            document.getElementById('urlIllusBtn').addEventListener('click', () => {
+                openUrlModal((base64) => {
+                    const ch = getActiveChapter();
+                    if (!ch) return;
+                    if (!ch.images) ch.images = [];
+                    ch.images.push(base64);
+                    renderIllustrationGrid(ch);
+                    updateChapterNav();
+                    markDirty();
+                });
+            });
+
+            // Delete chapter
+            document.getElementById('deleteChapterBtn').addEventListener('click', () => {
+                const ch = getActiveChapter();
+                if (!ch) return;
+                if (!confirm(
+                        `Hapus bab "${ch.title || 'tanpa judul'}"? Tindakan ini tidak bisa dibatalkan.`
+                        )) return;
+                projectData.chapters = projectData.chapters.filter(c => c.id !== ch.id);
+                projectData.activeChapterId = null;
+                projectData.activeSection = 'cover';
+                $sectionCover.style.display = '';
+                $sectionChapter.style.display = 'none';
+                $topbarTitle.textContent = '📕 Cover Novel';
+                updateChapterNav();
+                markDirty();
+                showToast('🗑 Bab dihapus.');
+            });
+
+            // ==================== COVER EDITOR ====================
+            function updateCoverPreview() {
+                if (projectData.cover.image) {
+                    $coverPreview.innerHTML =
+                        `<img src="${projectData.cover.image}" alt="Cover" style="width:100%;height:100%;object-fit:cover;">`;
+                } else {
+                    $coverPreview.innerHTML = '<span>Tidak ada gambar cover</span>';
+                }
+            }
+
+            $coverPreview.addEventListener('click', () => {
+                triggerImagePick((base64) => {
+                    projectData.cover.image = base64;
+                    updateCoverPreview();
+                    markDirty();
+                });
+            });
+            document.getElementById('uploadCoverBtn').addEventListener('click', () => {
+                $coverFileInput.click();
+            });
+            $coverFileInput.addEventListener('change', async () => {
+                if ($coverFileInput.files[0]) {
+                    projectData.cover.image = await loadImageFromFile($coverFileInput.files[0]);
+                    updateCoverPreview();
+                    markDirty();
+                    showToast('✅ Cover diunggah!');
+                }
+            });
+            document.getElementById('urlCoverBtn').addEventListener('click', () => {
+                openUrlModal((base64) => {
+                    projectData.cover.image = base64;
+                    updateCoverPreview();
+                    markDirty();
+                });
+            });
+            document.getElementById('removeCoverBtn').addEventListener('click', () => {
+                projectData.cover.image = null;
+                updateCoverPreview();
+                markDirty();
+                showToast('Gambar cover dihapus.');
+            });
+
+            // Cover text inputs
+            [$coverTitle, $coverAuthor, $coverIllustrator, $coverTranslator, $coverGenre, $coverSynopsis].forEach(
+            el => {
+                el.addEventListener('input', () => {
+                    projectData.cover.title = $coverTitle.value;
+                    projectData.cover.author = $coverAuthor.value;
+                    projectData.cover.illustrator = $coverIllustrator.value;
+                    projectData.cover.translator = $coverTranslator.value;
+                    projectData.cover.genre = $coverGenre.value;
+                    projectData.cover.synopsis = $coverSynopsis.value;
+                    markDirty();
+                });
+            });
+
+            // ==================== PDF GENERATION ====================
+            async function generatePDF() {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4',
+                });
+
+                const A4_W = 210;
+                const A4_H = 297;
+                let pageNum = 0;
+
+                // Helper: add full-page image on a custom-sized page
+                async function addFullPageImage(base64) {
+                    const info = await getImageAspectRatio(base64);
+                    const imgRatio = info.ratio; // width/height
+
+                    let pageW, pageH;
+                    if (imgRatio >= 1) {
+                        // Landscape or square
+                        pageH = Math.min(A4_H, A4_W);
+                        pageW = pageH * imgRatio;
+                        if (pageW > A4_W * 1.5) {
+                            pageW = A4_W * 1.5;
+                            pageH = pageW / imgRatio;
+                        }
+                    } else {
+                        // Portrait
+                        pageW = A4_W;
+                        pageH = pageW / imgRatio;
+                        if (pageH > A4_H * 1.5) {
+                            pageH = A4_H * 1.5;
+                            pageW = pageH * imgRatio;
+                        }
+                    }
+
+                    // Clamp to reasonable bounds
+                    pageW = Math.max(50, Math.min(pageW, 400));
+                    pageH = Math.max(70, Math.min(pageH, 400));
+
+                    if (pageNum === 0) {
+                        pdf.deletePage(1);
+                        pdf.addPage([pageW, pageH], imgRatio >= 1 ? 'landscape' : 'portrait');
+                    } else {
+                        pdf.addPage([pageW, pageH], imgRatio >= 1 ? 'landscape' : 'portrait');
+                    }
+                    pageNum++;
+                    pdf.addImage(base64, 'JPEG', 0, 0, pageW, pageH, undefined, 'FAST');
+                }
+
+                // Helper: add text page (A4 portrait)
+                function addTextPage(text, pageTitle) {
+                    if (pageNum === 0) {
+                        // First page already exists
+                    } else {
+                        pdf.addPage('a4', 'portrait');
+                    }
+                    pageNum++;
+                    let y = 20;
+                    if (pageTitle) {
+                        pdf.setFont('helvetica', 'bold');
+                        pdf.setFontSize(16);
+                        pdf.text(pageTitle, 15, y, { maxWidth: A4_W - 30 });
+                        y += 14;
+                        pdf.setFont('helvetica', 'normal');
+                        pdf.setFontSize(10);
+                    }
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setFontSize(10);
+                    const lines = pdf.splitTextToSize(text || '', A4_W - 30);
+                    for (const line of lines) {
+                        if (y > A4_H - 20) {
+                            pdf.addPage('a4', 'portrait');
+                            pageNum++;
+                            y = 20;
+                        }
+                        pdf.text(line, 15, y);
+                        y += 5.5;
+                    }
+                }
+
+                // === COVER ===
+                if (projectData.cover.image) {
+                    await addFullPageImage(projectData.cover.image);
+                }
+
+                // Cover metadata page
+                {
+                    if (pageNum === 0) {
+                        // use existing first page
+                    } else {
+                        pdf.addPage('a4', 'portrait');
+                    }
+                    pageNum++;
+                    let y = 25;
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setFontSize(22);
+                    const title = projectData.cover.title || 'Novel';
+                    pdf.text(title, A4_W / 2, y, { align: 'center' });
+                    y += 18;
+                    pdf.setFontSize(11);
+                    pdf.setFont('helvetica', 'normal');
+                    const metaLines = [];
+                    if (projectData.cover.author) metaLines.push('Penulis: ' + projectData.cover.author);
+                    if (projectData.cover.illustrator) metaLines.push('Ilustrator: ' + projectData.cover
+                        .illustrator);
+                    if (projectData.cover.translator) metaLines.push('Penerjemah: ' + projectData.cover.translator);
+                    if (projectData.cover.genre) metaLines.push('Genre: ' + projectData.cover.genre);
+                    for (const line of metaLines) {
+                        pdf.text(line, A4_W / 2, y, { align: 'center' });
+                        y += 7;
+                    }
+                    if (projectData.cover.synopsis) {
+                        y += 10;
+                        pdf.setFont('helvetica', 'bold');
+                        pdf.setFontSize(10);
+                        pdf.text('Sinopsis:', 20, y);
+                        y += 7;
+                        pdf.setFont('helvetica', 'normal');
+                        pdf.setFontSize(9);
+                        const synLines = pdf.splitTextToSize(projectData.cover.synopsis, A4_W - 40);
+                        for (const line of synLines) {
+                            if (y > A4_H - 20) {
+                                pdf.addPage('a4', 'portrait');
+                                pageNum++;
+                                y = 20;
+                            }
+                            pdf.text(line, 20, y);
+                            y += 5;
+                        }
+                    }
+                }
+
+                // === CHAPTERS ===
+                for (const ch of projectData.chapters) {
+                    // Chapter title page
+                    if (ch.title) {
+                        pdf.addPage('a4', 'portrait');
+                        pageNum++;
+                        pdf.setFont('helvetica', 'bold');
+                        pdf.setFontSize(18);
+                        const chTitle = ch.title;
+                        pdf.text(chTitle, A4_W / 2, A4_H / 2 - 10, { align: 'center' });
+                        // decorative line
+                        pdf.setDrawColor(180, 180, 180);
+                        pdf.setLineWidth(0.3);
+                        pdf.line(A4_W / 2 - 30, A4_H / 2, A4_W / 2 + 30, A4_H / 2);
+                    }
+
+                    if (ch.type === 'illustration') {
+                        for (const imgData of (ch.images || [])) {
+                            await addFullPageImage(imgData);
+                        }
+                    } else {
+                        // Text chapter with blocks
+                        for (const block of (ch.blocks || [])) {
+                            if (block.type === 'text') {
+                                addTextPage(block.content || '', null);
+                            } else if (block.type === 'image' && block.data) {
+                                await addFullPageImage(block.data);
+                            }
+                        }
+                    }
+                }
+
+                // If PDF is empty, add a placeholder page
+                if (pageNum === 0) {
+                    pdf.addPage('a4', 'portrait');
+                    pageNum++;
+                    pdf.setFontSize(14);
+                    pdf.text('Hikari Pdf Studio - Dokumen Kosong', A4_W / 2, A4_H / 2, { align: 'center' });
+                }
+
+                // Remove the very first default blank page if we added content
+                // (jsPDF creates one page by default; we've been adding on top)
+                // Actually, our logic handles this by deleting page 1 on first addFullPageImage call
+
+                return pdf;
+            }
+
+            $downloadPdfBtn.addEventListener('click', async () => {
+                $downloadPdfBtn.disabled = true;
+                $downloadPdfBtn.innerHTML = '<span>⏳</span> <span class="btn-label">Membuat PDF...</span>';
+                try {
+                    const pdf = await generatePDF();
+                    const filename = (projectData.cover.title || 'novel') + '.pdf';
+                    pdf.save(filename.replace(/[^a-zA-Z0-9_\-\.\s]/g, '_'));
+                    showToast('✅ PDF berhasil diunduh!');
+                } catch (e) {
+                    console.error('PDF generation error:', e);
+                    showToast('❌ Gagal membuat PDF: ' + e.message, 'error');
+                } finally {
+                    $downloadPdfBtn.disabled = false;
+                    $downloadPdfBtn.innerHTML = '<span>📥</span> <span class="btn-label">Download PDF</span>';
+                }
+            });
+
+            // ==================== RESET ====================
+            $resetBtn.addEventListener('click', () => {
+                if (!confirm(
+                        'Reset semua data? Semua cover, bab, dan gambar akan dihapus. Tindakan ini tidak bisa dibatalkan.'
+                        )) return;
+                projectData = {
+                    cover: { image: null, title: '', author: '', illustrator: '', translator: '', genre: '',
+                        synopsis: '' },
+                    chapters: [],
+                    activeSection: 'cover',
+                    activeChapterId: null,
+                };
+                $coverTitle.value = '';
+                $coverAuthor.value = '';
+                $coverIllustrator.value = '';
+                $coverTranslator.value = '';
+                $coverGenre.value = '';
+                $coverSynopsis.value = '';
+                updateCoverPreview();
+                $sectionCover.style.display = '';
+                $sectionChapter.style.display = 'none';
+                $topbarTitle.textContent = '📕 Cover Novel';
+                updateChapterNav();
+                saveProject();
+                showToast('🔄 Semua data direset.');
+            });
+
+            // ==================== DARK/LIGHT MODE ====================
+            function applyTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                localStorage.setItem('hikari_theme', theme);
+                $themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+            }
+
+            function toggleTheme() {
+                const current = document.documentElement.getAttribute('data-theme');
+                applyTheme(current === 'dark' ? 'light' : 'dark');
+            }
+
+            $themeToggle.addEventListener('click', toggleTheme);
+
+            // Load saved theme or system preference
+            const savedTheme = localStorage.getItem('hikari_theme');
+            if (savedTheme) {
+                applyTheme(savedTheme);
+            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                applyTheme('dark');
+            } else {
+                applyTheme('light');
+            }
+
+            // Listen for system theme changes
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (!localStorage.getItem('hikari_theme')) {
+                    applyTheme(e.matches ? 'dark' : 'light');
+                }
+            });
+
+            // ==================== KEYBOARD SHORTCUTS ====================
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    saveProject();
+                    showToast('💾 Proyek disimpan!');
+                }
+            });
+
+            // ==================== INIT ====================
+            function escapeHTML(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            function init() {
+                loadProject();
+                // Populate cover form
+                $coverTitle.value = projectData.cover.title || '';
+                $coverAuthor.value = projectData.cover.author || '';
+                $coverIllustrator.value = projectData.cover.illustrator || '';
+                $coverTranslator.value = projectData.cover.translator || '';
+                $coverGenre.value = projectData.cover.genre || '';
+                $coverSynopsis.value = projectData.cover.synopsis || '';
+                updateCoverPreview();
+
+                // Restore active section
+                if (projectData.activeSection === 'chapter' && projectData.activeChapterId) {
+                    const ch = projectData.chapters.find(c => c.id === projectData.activeChapterId);
+                    if (ch) {
+                        selectChapter(ch.id);
+                    } else {
+                        selectSection('cover');
+                    }
+                } else {
+                    selectSection('cover');
+                }
+                updateChapterNav();
+                $saveIndicator.textContent = '💾 Tersimpan';
+                $saveIndicator.className = 'save-indicator';
+            }
+
+            init();
+            console.log('✨ Hikari Pdf Studio siap!');
+            console.log('📕 Buat novel PDF profesional dengan gambar full-page.');
+            console.log('💡 Tips: Ctrl+S untuk menyimpan manual.');
+            console.log('📱 Responsive & mendukung mode gelap/terang.');
+        })();
+    </script>
+</body>
+</html>
