@@ -645,7 +645,6 @@
             area.appendChild(segDiv);
           });
         } else {
-          // Text chapter (mixed text & image)
           content.forEach((seg, idx) => {
             const segDiv = document.createElement('div');
             segDiv.className = 'segment';
@@ -695,7 +694,6 @@
           });
         }
 
-        // Sortable
         if (typeof Sortable !== 'undefined') {
           new Sortable(area, {
             handle: '.segment-handle',
@@ -737,16 +735,41 @@
 
       // ========== PDF GENERATION ==========
       const FONT_URL = 'https://fonts.gstatic.com/s/notosansjp/v52/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFEkLom0zjLpEIQ.ttf';
+      let fontBase64Data = null;
       let fontEmbedded = false;
+
+      async function fetchFontAsBase64(url) {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Font fetch failed');
+        const blob = await response.blob();
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result.split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      }
 
       async function ensureJapaneseFont(doc) {
         if (fontEmbedded) return;
         try {
-          await doc.addFont(FONT_URL, 'NotoSansJP', 'normal');
+          if (!fontBase64Data) {
+            fontBase64Data = await fetchFontAsBase64(FONT_URL);
+          }
+          doc.addFont(fontBase64Data, 'NotoSansJP', 'normal', 'Identity-H');
           fontEmbedded = true;
         } catch (e) {
-          alert('Gagal memuat font Jepang. Teks Jepang mungkin tidak terbaca.');
-          throw e;
+          alert('Gagal memuat font Jepang. Karakter Jepang mungkin tidak terbaca sempurna. PDF tetap dibuat dengan font default.');
+          // Biarkan fontEmbedded = false, gunakan Helvetica nanti
+          fontEmbedded = true; // supaya tidak mencoba lagi
+        }
+      }
+
+      function setDocumentFont(doc) {
+        if (fontEmbedded && fontBase64Data) {
+          doc.setFont('NotoSansJP', 'normal');
+        } else {
+          doc.setFont('Helvetica', 'normal');
         }
       }
 
@@ -774,15 +797,18 @@
         const pageHeight = 297;
         const maxWidth = pageWidth - margin * 2;
 
-        // Embed font
         await ensureJapaneseFont(doc);
-        doc.setFont('NotoSansJP', 'normal');
+        setDocumentFont(doc);
 
         function addTextSegment(doc, text, startY, fontSize = 12, fontStyle = 'normal') {
           doc.setFontSize(fontSize);
-          doc.setFont('NotoSansJP', fontStyle);
+          if (fontEmbedded && fontBase64Data) {
+            doc.setFont('NotoSansJP', fontStyle);
+          } else {
+            doc.setFont('Helvetica', fontStyle);
+          }
           const lines = doc.splitTextToSize(text, maxWidth);
-          const lineHeight = fontSize * 0.3528 * 1.5; // mm
+          const lineHeight = fontSize * 0.3528 * 1.5;
           let y = startY;
           for (const line of lines) {
             if (y + lineHeight > pageHeight - margin) {
@@ -795,7 +821,7 @@
           return y;
         }
 
-        // 1. COVER IMAGE (custom page size)
+        // 1. COVER IMAGE
         if (state.cover.image) {
           try {
             const img = await loadImageFromUrl(state.cover.image);
@@ -803,20 +829,19 @@
             const hMM = (img.naturalHeight / 96) * 25.4;
             doc.addPage([wMM, hMM]);
             doc.addImage(img, 'JPEG', 0, 0, wMM, hMM, undefined, 'FAST');
-          } catch (e) {
-            console.warn('Cover image error', e);
-          }
+          } catch (e) { console.warn('Cover image error', e); }
         }
 
         // 2. COVER TEXT PAGE
         doc.addPage('a4');
         let y = margin;
         doc.setFontSize(22);
-        doc.setFont('NotoSansJP', 'bold');
+        setDocumentFont(doc); // font bold/ normal diatur di setFont
+        doc.setFont('NotoSansJP', 'bold'); // jika font Jepang ada
         doc.text(state.cover.title || 'Tanpa Judul', pageWidth/2, y, { align: 'center' });
         y += 14;
         doc.setFontSize(12);
-        doc.setFont('NotoSansJP', 'normal');
+        setDocumentFont(doc);
         const infos = [
           ['Penulis: ', state.cover.author],
           ['Ilustrator: ', state.cover.illustrator],
@@ -845,13 +870,10 @@
                   const hMM = (img.naturalHeight / 96) * 25.4;
                   doc.addPage([wMM, hMM]);
                   doc.addImage(img, 'JPEG', 0, 0, wMM, hMM, undefined, 'FAST');
-                } catch (e) {
-                  console.warn('Illustration image error', e);
-                }
+                } catch (e) { console.warn('Illustration image error', e); }
               }
             }
           } else {
-            // Text chapter
             let needNewPage = true;
             let currentY = margin;
             for (const seg of chapter.content) {
@@ -873,9 +895,7 @@
                     doc.addPage([wMM, hMM]);
                     doc.addImage(img, 'JPEG', 0, 0, wMM, hMM, undefined, 'FAST');
                     needNewPage = true;
-                  } catch (e) {
-                    console.warn('Segment image error', e);
-                  }
+                  } catch (e) { console.warn('Segment image error', e); }
                 }
               }
             }
